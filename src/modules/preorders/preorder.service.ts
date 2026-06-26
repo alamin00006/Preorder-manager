@@ -1,0 +1,132 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "@/lib/errors/api-error";
+
+import { VALID_SORT_FIELDS } from "./preorder.constants";
+import { generateOrderNumber, getPagination } from "./preorder.utils";
+import {
+  normalizePreorderPayload,
+  normalizeStatus,
+  parsePreorderId,
+} from "./preorder.validation";
+
+import type { PreorderPayload, SortField, SortOrder } from "./preorder.types";
+
+async function getPreorderOrThrow(id: number) {
+  const preorder = await prisma.preorder.findUnique({
+    where: { id },
+  });
+
+  if (!preorder) {
+    throw notFound("Preorder not found");
+  }
+
+  return preorder;
+}
+
+export const preorderService = {
+  async list(searchParams: URLSearchParams) {
+    const status = searchParams.get("status") || "all";
+    const sortField = searchParams.get("sortField") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+
+    const { page, perPage, skip, take } = getPagination(searchParams);
+
+    const where: Prisma.PreorderWhereInput = {};
+
+    if (status === "active" || status === "inactive") {
+      where.status = status;
+    }
+
+    const orderByField = VALID_SORT_FIELDS.includes(sortField as SortField)
+      ? (sortField as SortField)
+      : "createdAt";
+
+    const orderByDirection: SortOrder = sortOrder === "asc" ? "asc" : "desc";
+
+    const [data, total] = await Promise.all([
+      prisma.preorder.findMany({
+        where,
+        orderBy: {
+          [orderByField]: orderByDirection,
+        },
+        skip,
+        take,
+      }),
+
+      prisma.preorder.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        perPage,
+        totalPages: Math.max(Math.ceil(total / perPage), 1),
+      },
+    };
+  },
+
+  async create(payload: PreorderPayload) {
+    const data = normalizePreorderPayload(payload);
+    const orderNumber = await generateOrderNumber();
+
+    return prisma.preorder.create({
+      data: {
+        ...data,
+        orderNumber,
+      },
+    });
+  },
+
+  async getById(id: string) {
+    const preorderId = parsePreorderId(id);
+    return getPreorderOrThrow(preorderId);
+  },
+
+  async update(id: string, payload: PreorderPayload) {
+    const preorderId = parsePreorderId(id);
+
+    await getPreorderOrThrow(preorderId);
+
+    const data = normalizePreorderPayload(payload);
+
+    return prisma.preorder.update({
+      where: { id: preorderId },
+      data,
+    });
+  },
+
+  async updateStatus(id: string, status: unknown) {
+    const preorderId = parsePreorderId(id);
+
+    await getPreorderOrThrow(preorderId);
+
+    const normalizedStatus = normalizeStatus(status);
+
+    return prisma.preorder.update({
+      where: { id: preorderId },
+      data: {
+        status: normalizedStatus,
+      },
+    });
+  },
+
+  async delete(id: string) {
+    const preorderId = parsePreorderId(id);
+
+    await getPreorderOrThrow(preorderId);
+
+    await prisma.preorder.delete({
+      where: { id: preorderId },
+    });
+
+    return {
+      success: true,
+      message: "Preorder deleted successfully",
+    };
+  },
+};
