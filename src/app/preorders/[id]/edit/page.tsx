@@ -11,10 +11,8 @@ export default async function EditPreorderPage({ params }: Props) {
   let preorder;
   try {
     preorder = await preorderService.getById(id);
-    console.log(preorder);
   } catch (error) {
-    if (error) notFound();
-    throw error;
+    notFound();
   }
 
   const serialized = {

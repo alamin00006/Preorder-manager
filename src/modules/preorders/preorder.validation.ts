@@ -3,13 +3,11 @@ import { VALID_STATUSES } from "./preorder.constants";
 import type { PreorderPayload, PreorderStatus } from "./preorder.types";
 
 export function parsePreorderId(id: string) {
-  const parsed = Number(id);
-
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  if (typeof id !== "string" || !id.trim()) {
     throw badRequest("Invalid preorder id");
   }
 
-  return parsed;
+  return id.trim();
 }
 
 function toRequiredString(value: unknown, field: string) {

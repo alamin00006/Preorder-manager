@@ -51,7 +51,13 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
     >,
   ) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "quantity" || name === "price") {
+      const numValue = parseFloat(value);
+      setForm((prev) => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   async function handleSubmit() {
