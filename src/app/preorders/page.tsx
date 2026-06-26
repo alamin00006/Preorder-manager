@@ -1,4 +1,4 @@
-import { PreorderList } from "@/components/PreorderList";
+import { PreorderList } from "@/components/preorder/PreorderList";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";

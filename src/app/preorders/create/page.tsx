@@ -1,5 +1,5 @@
-import { PreorderForm } from '@/components/PreorderForm'
+import { PreorderForm } from "@/components/preorder/PreorderForm";
 
 export default function CreatePreorderPage() {
-  return <PreorderForm mode="create" />
+  return <PreorderForm mode="create" />;
 }

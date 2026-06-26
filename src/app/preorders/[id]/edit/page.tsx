@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PreorderForm } from "@/components/PreorderForm";
+import { PreorderForm } from "@/components/preorder/PreorderForm";
 import { preorderService } from "@/modules/preorders/preorder.service";
 
 interface Props {
