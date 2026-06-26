@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "@/lib/errors/api-error";
 
 import { VALID_SORT_FIELDS } from "./preorder.constants";
 import { generateOrderNumber, getPagination } from "./preorder.utils";
@@ -11,14 +10,15 @@ import {
 } from "./preorder.validation";
 
 import type { PreorderPayload, SortField, SortOrder } from "./preorder.types";
+import { notFound } from "next/navigation";
 
-async function getPreorderOrThrow(id: number) {
+async function getPreorderOrThrow(id: string | number) {
   const preorder = await prisma.preorder.findUnique({
-    where: { id },
+    where: { id } as any,
   });
 
   if (!preorder) {
-    throw notFound("Preorder not found");
+    throw notFound();
   }
 
   return preorder;
@@ -95,7 +95,7 @@ export const preorderService = {
     const data = normalizePreorderPayload(payload);
 
     return prisma.preorder.update({
-      where: { id: preorderId },
+      where: { id: preorderId } as any,
       data,
     });
   },
@@ -108,7 +108,7 @@ export const preorderService = {
     const normalizedStatus = normalizeStatus(status);
 
     return prisma.preorder.update({
-      where: { id: preorderId },
+      where: { id: preorderId } as any,
       data: {
         status: normalizedStatus,
       },
@@ -121,7 +121,7 @@ export const preorderService = {
     await getPreorderOrThrow(preorderId);
 
     await prisma.preorder.delete({
-      where: { id: preorderId },
+      where: { id: preorderId } as any,
     });
 
     return {

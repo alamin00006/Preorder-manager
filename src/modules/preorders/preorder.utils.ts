@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { internalError } from "@/lib/errors/api-error";
 import {
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
   MAX_PER_PAGE,
 } from "./preorder.constants";
+import { internalError } from "@/errors/api-error";
 
 function formatOrderDate(date = new Date()) {
   const year = date.getFullYear();

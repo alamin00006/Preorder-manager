@@ -1,4 +1,4 @@
-import { badRequest, validationError } from "@/lib/errors/api-error";
+import { badRequest, validationError } from "@/errors/api-error";
 import { VALID_STATUSES } from "./preorder.constants";
 import type { PreorderPayload, PreorderStatus } from "./preorder.types";
 

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleApiError } from "@/lib/errors/error-handler";
+
 import { preorderService } from "./preorder.service";
+import { handleApiError } from "@/errors/error-handler";
 
 export const preorderController = {
-  async list(request: NextRequest) {
+  async list(req: NextRequest) {
     try {
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = new URL(req.url);
       const result = await preorderService.list(searchParams);
 
       return NextResponse.json({
@@ -18,9 +19,9 @@ export const preorderController = {
     }
   },
 
-  async create(request: NextRequest) {
+  async create(req: NextRequest) {
     try {
-      const body = await request.json();
+      const body = await req.json();
       const data = await preorderService.create(body);
 
       return NextResponse.json(
@@ -36,7 +37,7 @@ export const preorderController = {
     }
   },
 
-  async get(_request: NextRequest, id: string) {
+  async get(_req: NextRequest, id: string) {
     try {
       const data = await preorderService.getById(id);
 
@@ -50,9 +51,9 @@ export const preorderController = {
     }
   },
 
-  async update(request: NextRequest, id: string) {
+  async update(req: NextRequest, id: string) {
     try {
-      const body = await request.json();
+      const body = await req.json();
       const data = await preorderService.update(id, body);
 
       return NextResponse.json({
@@ -65,9 +66,9 @@ export const preorderController = {
     }
   },
 
-  async updateStatus(request: NextRequest, id: string) {
+  async updateStatus(req: NextRequest, id: string) {
     try {
-      const body = await request.json();
+      const body = await req.json();
       const data = await preorderService.updateStatus(id, body.status);
 
       return NextResponse.json({
@@ -80,12 +81,12 @@ export const preorderController = {
     }
   },
 
-  async delete(_request: NextRequest, id: string) {
+  async delete(_req: NextRequest, id: string) {
     try {
       const result = await preorderService.delete(id);
 
       return NextResponse.json({
-        success: true,
+        // success: true,
         ...result,
       });
     } catch (error) {
