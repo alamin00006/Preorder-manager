@@ -6,6 +6,7 @@ import { generateOrderNumber, getPagination } from "./preorder.utils";
 import {
   normalizePreorderPayload,
   normalizeStatus,
+  normalizeStatusId,
   parsePreorderId,
 } from "./preorder.validation";
 
@@ -35,7 +36,9 @@ export const preorderService = {
     const where: Prisma.PreorderWhereInput = {};
 
     if (status === "active" || status === "inactive") {
-      where.status = status;
+      where.status = {
+        name: status,
+      };
     }
 
     const orderByField = VALID_SORT_FIELDS.includes(sortField as SortField)
@@ -52,6 +55,9 @@ export const preorderService = {
         },
         skip,
         take,
+        include: {
+          status: true,
+        },
       }),
 
       prisma.preorder.count({
@@ -107,10 +113,19 @@ export const preorderService = {
 
     const normalizedStatus = normalizeStatus(status);
 
+    // Find the status record by name
+    const statusRecord = await prisma.status.findUnique({
+      where: { name: normalizedStatus },
+    });
+
+    if (!statusRecord) {
+      throw new Error("Status not found");
+    }
+
     return prisma.preorder.update({
       where: { id: preorderId } as any,
       data: {
-        status: normalizedStatus,
+        statusId: statusRecord.id,
       },
     });
   },

@@ -12,7 +12,11 @@ export const preorderController = {
       return NextResponse.json({
         success: true,
         message: "Preorders fetched successfully",
-        ...result,
+        data: result.data,
+        total: result.meta.total,
+        page: result.meta.page,
+        perPage: result.meta.perPage,
+        totalPages: result.meta.totalPages,
       });
     } catch (error) {
       return handleApiError(error);

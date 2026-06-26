@@ -10,6 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Status {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  preorders  Preorder[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
 model Preorder {
   id           String   @id @default(cuid())
   orderNumber  String   @unique
@@ -18,7 +26,11 @@ model Preorder {
   product      String
   quantity     Int
   price        Float
-  status       String   @default("active")
+  statusId     String
+  status       Status   @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  preorderWhen String?
+  startsAt     DateTime?
+  endsAt       DateTime?
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

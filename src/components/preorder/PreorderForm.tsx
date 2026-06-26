@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Preorder, PreorderFormData } from "@/types/preorder";
 
 interface PreorderFormProps {
@@ -22,7 +21,10 @@ const emptyForm: PreorderFormData = {
   product: "",
   quantity: 1,
   price: 0,
-  status: "active",
+  statusId: "active-id",
+  preorderWhen: "regardless-of-stock",
+  startsAt: "",
+  endsAt: "",
   notes: "",
 };
 
@@ -37,7 +39,10 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
           product: initialData.product,
           quantity: initialData.quantity,
           price: initialData.price,
-          status: initialData.status,
+          statusId: initialData.statusId,
+          preorderWhen: initialData.preorderWhen || "regardless-of-stock",
+          startsAt: initialData.startsAt || "",
+          endsAt: initialData.endsAt || "",
           notes: initialData.notes || "",
         }
       : emptyForm,
@@ -76,7 +81,10 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
         product: form.product,
         quantity: form.quantity,
         price: form.price,
-        status: form.status,
+        statusId: form.statusId,
+        preorderWhen: form.preorderWhen,
+        startsAt: form.startsAt || null,
+        endsAt: form.endsAt || null,
         notes: form.notes,
       };
 
@@ -105,8 +113,8 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <Button
             type="button"
             onClick={() => router.push("/preorders")}
@@ -116,25 +124,35 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
             <ArrowLeft size={16} />
             Back
           </Button>
-          <span className="text-gray-300">/</span>
-          <span className="text-sm text-gray-500">Preorders</span>
-          <span className="text-gray-300">/</span>
-          <span className="text-sm font-medium text-gray-800">
-            {mode === "create" ? "Create Preorder" : "Edit Preorder"}
-          </span>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              onClick={() => router.push("/preorders")}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-gray-800 hover:bg-gray-900 text-white"
+            >
+              {loading && <Loader2 size={15} className="animate-spin" />}
+              {loading ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Form */}
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {mode === "create" ? "Create Preorder" : "Update Preorder"}
+          <h1 className="text-xl font-semibold text-gray-900">
+            Preorder details
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {mode === "create"
-              ? "Fill in the details below to create a new preorder."
-              : "Update the preorder details and save your changes."}
+            These values appear in the preorders list.
           </p>
         </div>
 
@@ -144,121 +162,129 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
           </div>
         )}
 
-        <Card className="p-6 space-y-5">
-          {/* Row 1 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <Label className="mb-1.5">
-                Order Number <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                name="orderNumber"
-                value={
-                  mode === "create"
-                    ? "Auto-generated on save"
-                    : form.orderNumber
-                }
-                readOnly
-                disabled={mode === "create"}
-              />
-            </div>
-            <div>
-              <Label className="mb-1.5">Status</Label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Row 2 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <Label className="mb-1.5">
-                Customer Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                name="customerName"
-                value={form.customerName}
-                onChange={handleChange}
-                placeholder="Full name"
-              />
-            </div>
-            <div>
-              <Label className="mb-1.5">
-                Email <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="customer@example.com"
-              />
-            </div>
-          </div>
-
-          {/* Row 3 */}
+        <Card className="p-6 space-y-6">
+          {/* Name Field */}
           <div>
             <Label className="mb-1.5">
-              Product <span className="text-red-500">*</span>
+              Name <span className="text-red-500">*</span>
             </Label>
             <Input
-              name="product"
-              value={form.product}
+              name="customerName"
+              value={form.customerName}
               onChange={handleChange}
-              placeholder="Product name"
+              placeholder="A label to recognize this preorder by."
+              className="h-12"
             />
+            <p className="text-xs text-gray-500 mt-1.5">
+              A label to recognize this preorder by.
+            </p>
           </div>
 
-          {/* Row 4 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <Label className="mb-1.5">
-                Quantity <span className="text-red-500">*</span>
-              </Label>
+          {/* Products Field */}
+          <div>
+            <Label className="mb-1.5">Products</Label>
+            <div className="flex items-center gap-3">
               <Input
                 name="quantity"
                 type="number"
                 min="1"
                 value={form.quantity}
                 onChange={handleChange}
+                className="w-24 h-12"
               />
+              <span className="text-sm text-gray-600">product(s)</span>
             </div>
-            <div>
-              <Label className="mb-1.5">
-                Price (BDT) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                name="price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={handleChange}
-              />
-            </div>
+            <p className="text-xs text-gray-500 mt-1.5">
+              Number of products covered by this preorder.
+            </p>
           </div>
 
-          {/* Notes */}
+          {/* Preorder When Field */}
           <div>
-            <Label className="mb-1.5">Notes</Label>
-            <Textarea
-              name="notes"
-              value={form.notes}
+            <Label className="mb-1.5">Preorder when</Label>
+            <select
+              name="preorderWhen"
+              value={form.preorderWhen}
               onChange={handleChange}
-              rows={3}
-              placeholder="Optional notes..."
+              className="h-12 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <option value="regardless-of-stock">regardless-of-stock</option>
+              <option value="out-of-stock">out-of-stock</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1.5">
+              When customers are allowed to preorder.
+            </p>
+          </div>
+
+          {/* Starts At Field */}
+          <div>
+            <Label className="mb-1.5">Starts at</Label>
+            <Input
+              name="startsAt"
+              type="datetime-local"
+              value={form.startsAt}
+              onChange={handleChange}
+              className="h-12"
             />
+            <p className="text-xs text-gray-500 mt-1.5">
+              When the preorder window opens.
+            </p>
+          </div>
+
+          {/* Ends At Field */}
+          <div>
+            <Label className="mb-1.5">Ends at</Label>
+            <Input
+              name="endsAt"
+              type="datetime-local"
+              value={form.endsAt}
+              onChange={handleChange}
+              className="h-12"
+              placeholder="mm/dd/yyyy, --:-- --"
+            />
+            <p className="text-xs text-gray-500 mt-1.5">
+              Leave empty for no end date.
+            </p>
+          </div>
+
+          {/* Status Field */}
+          <div>
+            <Label className="mb-1.5">Status</Label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    statusId:
+                      prev.statusId === "active-id"
+                        ? "inactive-id"
+                        : "active-id",
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  form.statusId === "active-id" ? "bg-gray-800" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    form.statusId === "active-id"
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-700">
+                {form.statusId === "active-id" ? "Active" : "Inactive"}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">
+              Active preorders are visible to customers.
+            </p>
           </div>
         </Card>
 
-        {/* Action Buttons */}
+        {/* Action Buttons at bottom */}
         <div className="flex items-center justify-end gap-3 mt-6">
           <Button
             type="button"
@@ -267,9 +293,14 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
           >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={loading}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-gray-800 hover:bg-gray-900 text-white"
+          >
             {loading && <Loader2 size={15} className="animate-spin" />}
-            {loading ? "Saving..." : "Save Changes"}
+            {loading ? "Saving..." : "Save changes"}
           </Button>
         </div>
       </div>

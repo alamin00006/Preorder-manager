@@ -53,6 +53,18 @@ export function normalizeStatus(value: unknown): PreorderStatus {
   throw validationError("Invalid status");
 }
 
+export function normalizeStatusId(value: unknown): string {
+  if (value === undefined || value === null || value === "") {
+    return "active-id";
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  throw validationError("Invalid status id");
+}
+
 export function normalizePreorderPayload(payload: PreorderPayload) {
   return {
     customerName: toRequiredString(payload.customerName, "Customer name"),
@@ -60,7 +72,19 @@ export function normalizePreorderPayload(payload: PreorderPayload) {
     product: toRequiredString(payload.product, "Product"),
     quantity: toPositiveInteger(payload.quantity, "Quantity"),
     price: toNonNegativeNumber(payload.price, "Price"),
-    status: normalizeStatus(payload.status),
+    statusId: normalizeStatusId(payload.statusId),
+    preorderWhen:
+      typeof payload.preorderWhen === "string" && payload.preorderWhen.trim()
+        ? payload.preorderWhen.trim()
+        : "regardless-of-stock",
+    startsAt:
+      typeof payload.startsAt === "string" && payload.startsAt.trim()
+        ? new Date(payload.startsAt.trim())
+        : null,
+    endsAt:
+      typeof payload.endsAt === "string" && payload.endsAt.trim()
+        ? new Date(payload.endsAt.trim())
+        : null,
     notes:
       typeof payload.notes === "string" && payload.notes.trim()
         ? payload.notes.trim()

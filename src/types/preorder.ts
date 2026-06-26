@@ -9,6 +9,13 @@ export type SortField =
   | "createdAt";
 export type SortOrder = "asc" | "desc";
 
+export interface Status {
+  id?: string;
+  name: PreorderStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Preorder {
   id: string;
   orderNumber: string;
@@ -17,8 +24,12 @@ export interface Preorder {
   product: string;
   quantity: number;
   price: number;
-  status: PreorderStatus;
-  notes: string | null;
+  statusId: string;
+  status?: Status;
+  preorderWhen?: string;
+  startsAt?: string;
+  endsAt?: string | null;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +49,9 @@ export interface PreorderFormData {
   product: string;
   quantity: number;
   price: number;
-  status: PreorderStatus;
+  statusId: string;
+  preorderWhen: string;
+  startsAt: string;
+  endsAt: string;
   notes: string;
 }

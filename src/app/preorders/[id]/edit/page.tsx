@@ -16,10 +16,23 @@ export default async function EditPreorderPage({ params }: Props) {
   }
 
   const serialized = {
-    ...preorder,
+    id: preorder.id,
+    orderNumber: preorder.orderNumber,
+    customerName: preorder.customerName,
+    email: preorder.email,
+    product: preorder.product,
+    quantity: preorder.quantity,
+    price: preorder.price,
+    statusId:
+      (preorder as any).statusId || (preorder as any).status === "inactive"
+        ? "inactive-id"
+        : "active-id",
+    preorderWhen: (preorder as any).preorderWhen || "regardless-of-stock",
+    startsAt: (preorder as any).startsAt?.toISOString() || "",
+    endsAt: (preorder as any).endsAt?.toISOString() || null,
+    notes: preorder.notes,
     createdAt: preorder.createdAt.toISOString(),
     updatedAt: preorder.updatedAt.toISOString(),
-    status: preorder.status as "active" | "inactive",
   };
 
   return <PreorderForm mode="edit" initialData={serialized} />;
