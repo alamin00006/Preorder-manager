@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
-  Plus,
   Pencil,
   Trash2,
   ChevronUp,
@@ -24,13 +23,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Preorder, PreorderListResponse } from "@/types/preorder";
-import { StatusBadge } from "./StatusBadge";
+import {
+  Preorder,
+  PreorderListResponse,
+  SortField,
+  SortOrder,
+} from "@/modules/preorders/preorder.types";
 import { StatusToggle } from "./StatusToggle";
 
 type FilterStatus = "all" | "active" | "inactive";
-type SortField = "name" | "createdAt" | "startsAt" | "endsAt";
-type SortOrder = "asc" | "desc";
 
 export function PreorderList() {
   const router = useRouter();
@@ -259,6 +260,11 @@ export function PreorderList() {
                   </div>
                   {[
                     { field: "name" as SortField, label: "Name" },
+                    { field: "products" as SortField, label: "Products" },
+                    {
+                      field: "preorderWhen" as SortField,
+                      label: "Preorder When",
+                    },
                     { field: "createdAt" as SortField, label: "Created At" },
                     { field: "startsAt" as SortField, label: "Starts At" },
                     { field: "endsAt" as SortField, label: "Ends At" },
@@ -393,7 +399,7 @@ export function PreorderList() {
                   ))
                 ) : preorders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-16 text-center">
+                    <td colSpan={8} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <PackageX size={40} className="text-gray-300" />
                         <p className="text-gray-500 font-medium">
@@ -424,10 +430,10 @@ export function PreorderList() {
                         />
                       </td>
                       <td className="px-4 py-3.5 font-medium text-gray-900">
-                        {preorder.customerName}
+                        {preorder.name}
                       </td>
                       <td className="px-4 py-3.5 text-gray-700">
-                        {preorder.product}
+                        {preorder.products}
                       </td>
                       <td className="px-4 py-3.5 text-gray-700">
                         {preorder.preorderWhen || "-"}

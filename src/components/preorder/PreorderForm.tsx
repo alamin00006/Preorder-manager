@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Preorder, PreorderFormData } from "@/types/preorder";
+import { Preorder, PreorderFormData } from "@/modules/preorders/preorder.types";
 
 interface PreorderFormProps {
   initialData?: Preorder;
@@ -15,12 +15,8 @@ interface PreorderFormProps {
 }
 
 const emptyForm: PreorderFormData = {
-  orderNumber: "",
-  customerName: "",
-  email: "",
-  product: "",
-  quantity: 1,
-  price: 0,
+  name: "",
+  products: 1,
   statusId: "active-id",
   preorderWhen: "regardless-of-stock",
   startsAt: "",
@@ -28,21 +24,27 @@ const emptyForm: PreorderFormData = {
   notes: "",
 };
 
+function toDateTimeInputValue(value?: Date | string | null) {
+  if (!value) return "";
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 16);
+}
+
 export function PreorderForm({ initialData, mode }: PreorderFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<PreorderFormData>(
     initialData
       ? {
-          orderNumber: initialData.orderNumber,
-          customerName: initialData.customerName,
-          email: initialData.email,
-          product: initialData.product,
-          quantity: initialData.quantity,
-          price: initialData.price,
+          name: initialData.name,
+          products: initialData.products,
           statusId: initialData.statusId,
           preorderWhen: initialData.preorderWhen || "regardless-of-stock",
-          startsAt: initialData.startsAt || "",
-          endsAt: initialData.endsAt || "",
+          startsAt: toDateTimeInputValue(initialData.startsAt),
+          endsAt: toDateTimeInputValue(initialData.endsAt),
           notes: initialData.notes || "",
         }
       : emptyForm,
@@ -57,7 +59,7 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
   ) {
     const { name, value } = e.target;
 
-    if (name === "quantity" || name === "price") {
+    if (name === "products") {
       const numValue = parseFloat(value);
       setForm((prev) => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }));
     } else {
@@ -76,11 +78,8 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
       const method = mode === "edit" ? "PUT" : "POST";
 
       const payload = {
-        customerName: form.customerName,
-        email: form.email,
-        product: form.product,
-        quantity: form.quantity,
-        price: form.price,
+        name: form.name,
+        products: form.products,
         statusId: form.statusId,
         preorderWhen: form.preorderWhen,
         startsAt: form.startsAt || null,
@@ -169,8 +168,8 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
               Name <span className="text-red-500">*</span>
             </Label>
             <Input
-              name="customerName"
-              value={form.customerName}
+              name="name"
+              value={form.name}
               onChange={handleChange}
               placeholder="A label to recognize this preorder by."
               className="h-12"
@@ -185,10 +184,10 @@ export function PreorderForm({ initialData, mode }: PreorderFormProps) {
             <Label className="mb-1.5">Products</Label>
             <div className="flex items-center gap-3">
               <Input
-                name="quantity"
+                name="products"
                 type="number"
                 min="1"
-                value={form.quantity}
+                value={form.products}
                 onChange={handleChange}
                 className="w-24 h-12"
               />

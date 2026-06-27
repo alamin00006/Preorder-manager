@@ -6,33 +6,34 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+function toIsoString(value: Date | string | null | undefined) {
+  if (!value) return null;
+
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 export default async function EditPreorderPage({ params }: Props) {
   const { id } = await params;
   let preorder;
   try {
     preorder = await preorderService.getById(id);
-  } catch (error) {
+  } catch {
     notFound();
   }
 
   const serialized = {
     id: preorder.id,
     orderNumber: preorder.orderNumber,
-    customerName: preorder.customerName,
-    email: preorder.email,
-    product: preorder.product,
-    quantity: preorder.quantity,
-    price: preorder.price,
-    statusId:
-      (preorder as any).statusId || (preorder as any).status === "inactive"
-        ? "inactive-id"
-        : "active-id",
-    preorderWhen: (preorder as any).preorderWhen || "regardless-of-stock",
-    startsAt: (preorder as any).startsAt?.toISOString() || "",
-    endsAt: (preorder as any).endsAt?.toISOString() || null,
+    name: preorder.name,
+    products: preorder.products,
+    statusId: preorder.statusId,
+    status: preorder.status,
+    preorderWhen: preorder.preorderWhen || "regardless-of-stock",
+    startsAt: toIsoString(preorder.startsAt) || "",
+    endsAt: toIsoString(preorder.endsAt),
     notes: preorder.notes,
-    createdAt: preorder.createdAt.toISOString(),
-    updatedAt: preorder.updatedAt.toISOString(),
+    createdAt: toIsoString(preorder.createdAt) || "",
+    updatedAt: toIsoString(preorder.updatedAt) || "",
   };
 
   return <PreorderForm mode="edit" initialData={serialized} />;

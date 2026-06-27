@@ -13,7 +13,7 @@ export default function NotFound() {
             Preorder Not Found
           </h2>
           <p className="text-gray-500 mb-6">
-            The preorder you're trying to edit doesn't exist or has been
+            The preorder you&apos;re trying to edit doesn&apos;t exist or has been
             removed.
           </p>
         </div>

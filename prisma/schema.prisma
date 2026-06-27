@@ -21,11 +21,8 @@ model Status {
 model Preorder {
   id           String   @id @default(cuid())
   orderNumber  String   @unique
-  customerName String
-  email        String
-  product      String
-  quantity     Int
-  price        Float
+  name         String
+  products     Int
   statusId     String
   status       Status   @relation(fields: [statusId], references: [id], onDelete: Cascade)
   preorderWhen String?

@@ -7,10 +7,10 @@ export const MAX_PER_PAGE = 50;
 export const VALID_STATUSES: PreorderStatus[] = ["active", "inactive"];
 
 export const VALID_SORT_FIELDS: SortField[] = [
-  "orderNumber",
-  "customerName",
-  "product",
-  "price",
-  "quantity",
+  "name",
+  "products",
+  "preorderWhen",
+  "startsAt",
+  "endsAt",
   "createdAt",
 ];

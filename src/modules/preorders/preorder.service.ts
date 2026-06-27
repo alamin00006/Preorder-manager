@@ -6,23 +6,71 @@ import { generateOrderNumber, getPagination } from "./preorder.utils";
 import {
   normalizePreorderPayload,
   normalizeStatus,
-  normalizeStatusId,
   parsePreorderId,
 } from "./preorder.validation";
 
 import type { PreorderPayload, SortField, SortOrder } from "./preorder.types";
 import { notFound } from "next/navigation";
 
+type PreorderRecord = {
+  id: string;
+  orderNumber: string;
+  name: string;
+  products: number;
+  statusId: string;
+  status: {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  preorderWhen: string | null;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const SORT_FIELD_MAP: Record<SortField, string> = {
+  name: "name",
+  products: "products",
+  preorderWhen: "preorderWhen",
+  startsAt: "startsAt",
+  endsAt: "endsAt",
+  createdAt: "createdAt",
+};
+
+function toPreorderResponse(preorder: PreorderRecord) {
+  return {
+    id: preorder.id,
+    orderNumber: preorder.orderNumber,
+    name: preorder.name,
+    products: preorder.products,
+    statusId: preorder.statusId,
+    status: preorder.status,
+    preorderWhen: preorder.preorderWhen,
+    startsAt: preorder.startsAt,
+    endsAt: preorder.endsAt,
+    notes: preorder.notes,
+    createdAt: preorder.createdAt,
+    updatedAt: preorder.updatedAt,
+  };
+}
+
 async function getPreorderOrThrow(id: string | number) {
   const preorder = await prisma.preorder.findUnique({
-    where: { id } as any,
+    where: { id: String(id) },
+    include: {
+      status: true,
+    },
   });
 
   if (!preorder) {
     throw notFound();
   }
 
-  return preorder;
+  return preorder as unknown as PreorderRecord;
 }
 
 export const preorderService = {
@@ -44,6 +92,7 @@ export const preorderService = {
     const orderByField = VALID_SORT_FIELDS.includes(sortField as SortField)
       ? (sortField as SortField)
       : "createdAt";
+    const prismaOrderByField = SORT_FIELD_MAP[orderByField];
 
     const orderByDirection: SortOrder = sortOrder === "asc" ? "asc" : "desc";
 
@@ -51,8 +100,8 @@ export const preorderService = {
       prisma.preorder.findMany({
         where,
         orderBy: {
-          [orderByField]: orderByDirection,
-        },
+          [prismaOrderByField]: orderByDirection,
+        } as Prisma.PreorderOrderByWithRelationInput,
         skip,
         take,
         include: {
@@ -66,7 +115,7 @@ export const preorderService = {
     ]);
 
     return {
-      data,
+      data: (data as unknown as PreorderRecord[]).map(toPreorderResponse),
       meta: {
         total,
         page,
@@ -84,13 +133,15 @@ export const preorderService = {
       data: {
         ...data,
         orderNumber,
-      },
+      } as unknown as Prisma.PreorderUncheckedCreateInput,
     });
   },
 
   async getById(id: string) {
     const preorderId = parsePreorderId(id);
-    return getPreorderOrThrow(preorderId);
+    const preorder = await getPreorderOrThrow(preorderId);
+
+    return toPreorderResponse(preorder);
   },
 
   async update(id: string, payload: PreorderPayload) {
@@ -101,8 +152,8 @@ export const preorderService = {
     const data = normalizePreorderPayload(payload);
 
     return prisma.preorder.update({
-      where: { id: preorderId } as any,
-      data,
+      where: { id: preorderId },
+      data: data as unknown as Prisma.PreorderUncheckedUpdateInput,
     });
   },
 
@@ -123,7 +174,7 @@ export const preorderService = {
     }
 
     return prisma.preorder.update({
-      where: { id: preorderId } as any,
+      where: { id: preorderId },
       data: {
         statusId: statusRecord.id,
       },
@@ -136,7 +187,7 @@ export const preorderService = {
     await getPreorderOrThrow(preorderId);
 
     await prisma.preorder.delete({
-      where: { id: preorderId } as any,
+      where: { id: preorderId },
     });
 
     return {

@@ -28,14 +28,18 @@ function toPositiveInteger(value: unknown, field: string) {
   return parsed;
 }
 
-function toNonNegativeNumber(value: unknown, field: string) {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw validationError(`${field} must be zero or greater`);
+function toOptionalDate(value: string | Date | null | undefined, field: string) {
+  if (value === undefined || value === null || value === "") {
+    return null;
   }
 
-  return parsed;
+  const date = value instanceof Date ? value : new Date(value.trim());
+
+  if (Number.isNaN(date.getTime())) {
+    throw validationError(`${field} must be a valid date`);
+  }
+
+  return date;
 }
 
 export function normalizeStatus(value: unknown): PreorderStatus {
@@ -66,25 +70,19 @@ export function normalizeStatusId(value: unknown): string {
 }
 
 export function normalizePreorderPayload(payload: PreorderPayload) {
+  const name = toRequiredString(payload.name, "Name");
+  const products = toPositiveInteger(payload.products, "Products");
+
   return {
-    customerName: toRequiredString(payload.customerName, "Customer name"),
-    email: toRequiredString(payload.email, "Email"),
-    product: toRequiredString(payload.product, "Product"),
-    quantity: toPositiveInteger(payload.quantity, "Quantity"),
-    price: toNonNegativeNumber(payload.price, "Price"),
+    name,
+    products,
     statusId: normalizeStatusId(payload.statusId),
     preorderWhen:
       typeof payload.preorderWhen === "string" && payload.preorderWhen.trim()
         ? payload.preorderWhen.trim()
         : "regardless-of-stock",
-    startsAt:
-      typeof payload.startsAt === "string" && payload.startsAt.trim()
-        ? new Date(payload.startsAt.trim())
-        : null,
-    endsAt:
-      typeof payload.endsAt === "string" && payload.endsAt.trim()
-        ? new Date(payload.endsAt.trim())
-        : null,
+    startsAt: toOptionalDate(payload.startsAt, "Starts at"),
+    endsAt: toOptionalDate(payload.endsAt, "Ends at"),
     notes:
       typeof payload.notes === "string" && payload.notes.trim()
         ? payload.notes.trim()
