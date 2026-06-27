@@ -4,7 +4,7 @@ import { preorderService } from "./preorder.service";
 import { handleApiError } from "@/errors/error-handler";
 
 export const preorderController = {
-  async list(req: NextRequest) {
+  list: async (req: NextRequest) => {
     try {
       const { searchParams } = new URL(req.url);
       const result = await preorderService.list(searchParams);
@@ -23,9 +23,8 @@ export const preorderController = {
     }
   },
 
-  async create(req: NextRequest) {
+  create: async (req: NextRequest) => {
     try {
-      // Controllers pass raw JSON to the service; validation happens in the module layer.
       const body = await req.json();
       const data = await preorderService.create(body);
 
@@ -42,7 +41,7 @@ export const preorderController = {
     }
   },
 
-  async get(_req: NextRequest, id: string) {
+  get: async (_req: NextRequest, id: string) => {
     try {
       const data = await preorderService.getById(id);
 
@@ -56,7 +55,7 @@ export const preorderController = {
     }
   },
 
-  async update(req: NextRequest, id: string) {
+  update: async (req: NextRequest, id: string) => {
     try {
       const body = await req.json();
       const data = await preorderService.update(id, body);
@@ -71,9 +70,8 @@ export const preorderController = {
     }
   },
 
-  async updateStatus(req: NextRequest, id: string) {
+  updateStatus: async (req: NextRequest, id: string) => {
     try {
-      // Status is patched independently so list toggles do not need to resubmit the whole form.
       const body = await req.json();
       const data = await preorderService.updateStatus(id, body.status);
 
@@ -87,7 +85,7 @@ export const preorderController = {
     }
   },
 
-  async delete(_req: NextRequest, id: string) {
+  delete: async (_req: NextRequest, id: string) => {
     try {
       const result = await preorderService.delete(id);
 

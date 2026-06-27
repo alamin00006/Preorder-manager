@@ -1,148 +1,42 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-import { VALID_SORT_FIELDS } from "./preorder.constants";
-import { generateOrderNumber, getPagination } from "./preorder.utils";
+import {
+  PREORDER_WITH_STATUS,
+  SORT_FIELD_MAP,
+  castPreorder,
+  generateOrderNumber,
+  getOrderBy,
+  getPreorderOrThrow,
+  getSortParams,
+  getStatusWhere,
+  getPagination,
+  resolveStatusId,
+  toPreorderResponse,
+} from "./preorder.utils";
 import {
   normalizePreorderPayload,
   normalizeStatus,
   parsePreorderId,
 } from "./preorder.validation";
 
-import type {
-  PreorderPayload,
-  PreorderRecord,
-  SortField,
-  SortOrder,
-} from "./preorder.types";
-import { notFound } from "next/navigation";
-import { validationError } from "@/errors/api-error";
-
-// Query-string status values accepted by the list endpoint.
-type StatusFilter = "active" | "inactive";
-
-// Shared Prisma include for every response that needs status details.
-const PREORDER_WITH_STATUS = {
-  status: true,
-} as const;
-
-// Keep public sort names aligned with the UI while passing database field names to Prisma.
-const SORT_FIELD_MAP: Record<SortField, keyof PreorderRecord> = {
-  name: "name",
-  products: "products",
-  preorderWhen: "preorderWhen",
-  startsAt: "startsAt",
-  endsAt: "endsAt",
-  createdAt: "createdAt",
-};
-
-const isStatusFilter = (value: string): value is StatusFilter => {
-  return value === "active" || value === "inactive";
-};
-
-// Guard URL sort fields before using them in Prisma orderBy.
-const isSortField = (value: string): value is SortField => {
-  return (VALID_SORT_FIELDS as readonly string[]).includes(value);
-};
-
-// Normalize list sorting from URL params into safe defaults.
-const getSortParams = (searchParams: URLSearchParams) => {
-  const field = searchParams.get("sortField") || "createdAt";
-  const order = searchParams.get("sortOrder");
-
-  return {
-    field: isSortField(field) ? field : "createdAt",
-    direction: order === "asc" ? "asc" : "desc",
-  } satisfies {
-    field: SortField;
-    direction: SortOrder;
-  };
-};
-
-// Convert the status tab into Prisma where input.
-const getStatusWhere = (status: string): Prisma.PreorderWhereInput => {
-  if (!isStatusFilter(status)) {
-    return {};
-  }
-
-  return {
-    status: {
-      name: status,
-    },
-  };
-};
-
-// Build a Prisma orderBy object from the public sort field names.
-const getOrderBy = (
-  field: SortField,
-  direction: SortOrder,
-): Prisma.PreorderOrderByWithRelationInput => {
-  return {
-    [SORT_FIELD_MAP[field]]: direction,
-  } as Prisma.PreorderOrderByWithRelationInput;
-};
-
-// Keep casts centralized while Prisma Client catches up with schema changes.
-const castPreorder = (preorder: unknown) => {
-  // Prisma client types can lag behind schema edits until `prisma generate` is run.
-  return preorder as PreorderRecord;
-};
-
-// Resolve the form's canonical status ids to the actual database status row.
-const resolveStatusId = async (statusId: string) => {
-  const statusName =
-    statusId === "inactive-id"
-      ? "inactive"
-      : statusId === "active-id"
-        ? "active"
-        : null;
-
-  const status = statusName
-    ? await prisma.status.findUnique({ where: { name: statusName } })
-    : await prisma.status.findUnique({ where: { id: statusId } });
-
-  if (!status) {
-    throw validationError("Invalid preorder status");
-  }
-
-  return status.id;
-};
-
-// Shape database records into the API response used by the React components.
-const toPreorderResponse = (preorder: PreorderRecord) => {
-  return {
-    id: preorder.id,
-    orderNumber: preorder.orderNumber,
-    name: preorder.name,
-    products: preorder.products,
-    statusId: preorder.statusId,
-    status: preorder.status,
-    preorderWhen: preorder.preorderWhen,
-    startsAt: preorder.startsAt,
-    endsAt: preorder.endsAt,
-    notes: preorder.notes,
-    createdAt: preorder.createdAt,
-    updatedAt: preorder.updatedAt,
-  };
-};
-
-// Common lookup helper for get/update/delete flows.
-const getPreorderOrThrow = async (id: string) => {
-  const preorder = await prisma.preorder.findUnique({
-    where: { id },
-    include: PREORDER_WITH_STATUS,
-  });
-
-  if (!preorder) {
-    notFound();
-  }
-
-  return castPreorder(preorder);
-};
+import type { PreorderPayload } from "./preorder.types";
 
 export const preorderService = {
-  // Fetch filtered, sorted, paginated preorders for the table view.
-  async list(searchParams: URLSearchParams) {
+  /**
+   * Retrieves a paginated list of preorders with filtering and sorting capabilities.
+   * @param searchParams - URL search parameters containing:
+   *   - status: Filter by status name (default: "all")
+   *   - page: Page number for pagination (default: 1)
+   *   - perPage: Number of items per page (default: 10)
+   *   - sort: Field name to sort by
+   *   - direction: Sort direction ("asc" or "desc")
+   *   - search: Optional search query for filtering
+   * @returns Promise resolving to an object containing:
+   *   - data: Array of preorder response objects
+   *   - meta: Pagination metadata (total, page, perPage, totalPages)
+   */
+  list: async (searchParams: URLSearchParams) => {
     const status = searchParams.get("status") || "all";
     const { page, perPage, skip, take } = getPagination(searchParams);
     const where = getStatusWhere(status);
@@ -173,8 +67,14 @@ export const preorderService = {
     };
   },
 
-  // Create a preorder from normalized form data and assign a generated order number.
-  async create(payload: PreorderPayload) {
+  /**
+   * Creates a new preorder record in the database.
+   * @param payload - Preorder creation payload containing customer and order details
+   * @returns Promise resolving to the created preorder response object
+   * @throws {Error} If the payload validation fails or database operation fails
+  
+   */
+  create: async (payload: PreorderPayload) => {
     const data = normalizePreorderPayload(payload);
     const orderNumber = await generateOrderNumber();
     const statusId = await resolveStatusId(data.statusId);
@@ -191,16 +91,45 @@ export const preorderService = {
     return toPreorderResponse(castPreorder(preorder));
   },
 
-  // get a single preorder for edit page hydration.
-  async getById(id: string) {
+  /**
+   * Retrieves a single preorder by its unique identifier.
+   *
+   * Parses and validates the ID, fetches the preorder with associated status,
+   * and returns the formatted response. Throws an error if the preorder doesn't exist.
+   *
+   * @param id - The unique identifier of the preorder (can be UUID or order number)
+   * @returns Promise resolving to the preorder response object
+   * @throws {Error} If the ID format is invalid or preorder is not found
+   *
+   * @example
+   * const preorder = await preorderService.getById("550e8400-e29b-41d4-a716-446655440000");
+   */
+  getById: async (id: string) => {
     const preorderId = parsePreorderId(id);
     const preorder = await getPreorderOrThrow(preorderId);
 
     return toPreorderResponse(preorder);
   },
 
-  // Update the preorder fields while preserving generated fields.
-  async update(id: string, payload: PreorderPayload) {
+  /**
+   * Updates an existing preorder with new data.
+   *
+   * Validates the preorder exists, normalizes the update payload,
+   * resolves the status ID, and updates the record in the database.
+   * Returns the updated preorder with associated status data.
+   *
+   * @param id - The unique identifier of the preorder to update
+   * @param payload - Partial preorder data containing fields to update
+   * @returns Promise resolving to the updated preorder response object
+   * @throws {Error} If the ID is invalid, preorder not found, or update fails
+   *
+   * @example
+   * const updatedPreorder = await preorderService.update("550e8400-e29b-41d4-a716-446655440000", {
+   *   quantity: 5,
+   *   statusId: "new-status-uuid"
+   * });
+   */
+  update: async (id: string, payload: PreorderPayload) => {
     const preorderId = parsePreorderId(id);
 
     await getPreorderOrThrow(preorderId);
@@ -220,8 +149,25 @@ export const preorderService = {
     return toPreorderResponse(castPreorder(preorder));
   },
 
-  // Update Status.
-  async updateStatus(id: string, status: unknown) {
+  /**
+   * Updates the status of an existing preorder.
+   *
+   * Normalizes the status input, looks up the corresponding status record,
+   * and updates the preorder's status ID. This method is specifically
+   * designed for status transitions and workflow management.
+   *
+   * @param id - The unique identifier of the preorder to update
+   * @param status - The new status value (will be normalized internally)
+   * @returns Promise resolving to the updated preorder response object
+   * @throws {Error} If the preorder is not found or the status doesn't exist in the database
+   *
+   * @example
+   * const updatedPreorder = await preorderService.updateStatus(
+   *   "550e8400-e29b-41d4-a716-446655440000",
+   *   "completed"
+   * );
+   */
+  updateStatus: async (id: string, status: unknown) => {
     const preorderId = parsePreorderId(id);
 
     await getPreorderOrThrow(preorderId);
@@ -247,8 +193,22 @@ export const preorderService = {
     return toPreorderResponse(castPreorder(preorder));
   },
 
-  // Delete after confirming the preorder exists, so missing ids return 404.
-  async delete(id: string) {
+  /**
+   * Permanently deletes a preorder from the database.
+   *
+   * Validates the preorder exists before deletion to prevent accidental
+   * deletion of non-existent records. Returns a success confirmation
+   * upon successful deletion.
+   *
+   * @param id - The unique identifier of the preorder to delete
+   * @returns Promise resolving to a success response object
+   * @throws {Error} If the ID is invalid or preorder is not found
+   *
+   * @example
+   * const result = await preorderService.delete("550e8400-e29b-41d4-a716-446655440000");
+   * // Returns: { success: true, message: "Preorder deleted successfully" }
+   */
+  delete: async (id: string) => {
     const preorderId = parsePreorderId(id);
 
     await getPreorderOrThrow(preorderId);
