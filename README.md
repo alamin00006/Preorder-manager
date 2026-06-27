@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Preorder Manager
 
-## Getting Started
+A full-stack preorder management application built with **Next.js 16**, **Prisma**, and **SQLite**.
 
-First, run the development server:
+## Tech Stack
+
+- **Frontend & Backend:** Next.js 16 (App Router + API Route Handlers)
+- **ORM:** Prisma
+- **Database:** SQLite
+- **Styling:** Tailwind CSS
+- **UI primitives:** shadcn-style local components
+- **Icons:** Lucide React
+
+## Features
+
+- List all preorders with server-side filtering, sorting & pagination
+- Filter by status: All / Active / Inactive
+- Sort by: Order Number, Customer Name, Product, Price, Quantity, Date
+- Toggle Active/Inactive status with instant DB update
+- Delete preorders with confirmation
+- Row & select-all checkboxes
+- Create new preorders
+- Edit existing preorders (pre-filled form)
+- Backend-generated order numbers in `ORD-YYYYMMDD-000001` format
+- Controller / service / model module layering for preorder backend logic
+- Loading states and toast notifications
+- Empty state UI
+
+## Order Number Format
+
+New preorders are generated on the backend in this format:
+
+```txt
+ORD-YYYYMMDD-000001
+```
+
+Example: `ORD-20260626-000001`. The final segment is a six-digit daily sequence.
+
+## Prerequisites
+
+- Node.js 18+
+- npm
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Environment Variables
+
+Create a `.env` file in the root (already included):
+
+```env
+DATABASE_URL="file:./dev.db"
+```
+
+### 3. Database Setup
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 4. Seed Sample Data
+
+```bash
+npx prisma db seed
+```
+
+### 5. Run the App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 — redirects to /preorders automatically.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+preorder-manager/
+├── app/
+│   ├── api/preorders/
+│   │   ├── route.ts              # GET list, POST create
+│   │   └── [id]/
+│   │       ├── route.ts          # GET, PUT, DELETE
+│   │       └── status/
+│   │           └── route.ts      # PATCH toggle status
+│   ├── preorders/
+│   │   ├── page.tsx              # List page
+│   │   ├── create/page.tsx       # Create page
+│   │   └── [id]/edit/page.tsx    # Edit page
+├── components/
+│   ├── preorder/
+│   │   ├── PreorderList.tsx
+│   │   ├── PreorderForm.tsx
+│   │   ├── StatusBadge.tsx
+│   │   └── StatusToggle.tsx
+│   └── ui/
+│       └── dialog.tsx
+├── lib/
+│   ├── prisma.ts
+│   └── utils.ts
+├── modules/
+│   └── preorders/
+│       ├── preorder.controller.ts
+│       ├── preorder.model.ts
+│       ├── preorder.service.ts
+│       ├── preorder.types.ts
+│       ├── preorder.validation.ts
+│       ├── preorder.utils.ts
+│       └── preorder.constants.ts
+└── prisma/
+    ├── schema.prisma
+    └── seed.ts
+```
 
-To learn more about Next.js, take a look at the following resources:
+## API Reference
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Method | Endpoint                                                            | Description     |
+| ------ | ------------------------------------------------------------------- | --------------- |
+| GET    | /api/preorders?status=all&sortField=createdAt&sortOrder=desc&page=1 | List preorders  |
+| POST   | /api/preorders                                                      | Create preorder |
+| PUT    | /api/preorders/:id                                                  | Update preorder |
+| DELETE | /api/preorders/:id                                                  | Delete preorder |
+| PATCH  | /api/preorders/:id/status                                           | Toggle status   |
