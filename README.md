@@ -15,7 +15,7 @@ A full-stack preorder management application built with **Next.js 16**, **Prisma
 
 - List all preorders with server-side filtering, sorting & pagination
 - Filter by status: All / Active / Inactive
-- Sort by: Order Number, Customer Name, Product, Price, Quantity, Date
+- Sort by: Order Number, Name, Product, Price, Quantity, Date
 - Toggle Active/Inactive status with instant DB update
 - Delete preorders with confirmation
 - Row & select-all checkboxes
