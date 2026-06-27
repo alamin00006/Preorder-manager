@@ -1,5 +1,7 @@
 import { PreorderForm } from "@/components/preorder/PreorderForm";
 
-export default function CreatePreorderPage() {
+const CreatePreorderPage = () => {
   return <PreorderForm mode="create" />;
-}
+};
+
+export default CreatePreorderPage;

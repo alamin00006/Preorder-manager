@@ -25,6 +25,7 @@ export const preorderController = {
 
   async create(req: NextRequest) {
     try {
+      // Controllers pass raw JSON to the service; validation happens in the module layer.
       const body = await req.json();
       const data = await preorderService.create(body);
 
@@ -72,6 +73,7 @@ export const preorderController = {
 
   async updateStatus(req: NextRequest, id: string) {
     try {
+      // Status is patched independently so list toggles do not need to resubmit the whole form.
       const body = await req.json();
       const data = await preorderService.updateStatus(id, body.status);
 
@@ -90,7 +92,6 @@ export const preorderController = {
       const result = await preorderService.delete(id);
 
       return NextResponse.json({
-        // success: true,
         ...result,
       });
     } catch (error) {

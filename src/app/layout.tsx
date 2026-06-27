@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { AppToaster } from "@/lib/AppToaster";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -13,14 +14,19 @@ export const metadata: Metadata = {
   description: "Manage and track customer preorders",
 };
 
-export default function RootLayout({
+const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>) => {
   return (
     <html lang="en" className={`${poppins.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <AppToaster />
+      </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

@@ -1,21 +1,23 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  await prisma.status.deleteMany();
+const main = async () => {
   await prisma.preorder.deleteMany();
+  await prisma.status.deleteMany();
 
-  // Create status records
+  // Preorders reference status records by id, so recreate the canonical statuses first.
   const activeStatus = await prisma.status.create({
-    data: { name: "active" },
+    data: { id: "active-id", name: "active" },
   });
 
   const inactiveStatus = await prisma.status.create({
-    data: { name: "inactive" },
+    data: { id: "inactive-id", name: "inactive" },
   });
 
   const datePart = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+
+  // Seed rows mirror the target preorders table screenshot: name, products, timing, and status.
   const seedRows = [
     {
       name: "Multi variant 3",
@@ -83,6 +85,7 @@ async function main() {
     },
   ];
 
+  // orderNumber is still generated for API compatibility, but it is not displayed in the table.
   const preorders = seedRows.map((row, index) => ({
     orderNumber: `ORD-${datePart}-${String(index + 1).padStart(6, "0")}`,
     name: row.name,
@@ -95,11 +98,13 @@ async function main() {
   }));
 
   for (const preorder of preorders) {
-    await prisma.preorder.create({ data: preorder });
+    await prisma.preorder.create({
+      data: preorder as unknown as Prisma.PreorderUncheckedCreateInput,
+    });
   }
 
   console.log(`Seeded ${preorders.length} preorders`);
-}
+};
 
 main()
   .catch(console.error)

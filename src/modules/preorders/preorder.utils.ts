@@ -6,15 +6,15 @@ import {
 } from "./preorder.constants";
 import { internalError } from "@/errors/api-error";
 
-function formatOrderDate(date = new Date()) {
+const formatOrderDate = (date = new Date()) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}${month}${day}`;
-}
+};
 
-export async function generateOrderNumber() {
+export const generateOrderNumber = async () => {
   const prefix = `ORD-${formatOrderDate()}`;
 
   const existingToday = await prisma.preorder.count({
@@ -37,9 +37,9 @@ export async function generateOrderNumber() {
   }
 
   throw internalError("Could not generate order number");
-}
+};
 
-export function getPagination(searchParams: URLSearchParams) {
+export const getPagination = (searchParams: URLSearchParams) => {
   const page = Math.max(
     Number(searchParams.get("page") || DEFAULT_PAGE),
     DEFAULT_PAGE,
@@ -56,4 +56,4 @@ export function getPagination(searchParams: URLSearchParams) {
     skip: (page - 1) * perPage,
     take: perPage,
   };
-}
+};

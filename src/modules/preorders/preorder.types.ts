@@ -36,6 +36,27 @@ export type PreorderWithStatus = {
   updatedAt: Date;
 };
 
+// Database-facing preorder shape after including the related status record.
+export type PreorderRecord = {
+  id: string;
+  orderNumber: string;
+  name: string;
+  products: number;
+  statusId: string;
+  status: {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  preorderWhen: string | null;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type PreorderPayload = {
   name?: string;
   products?: number | string;

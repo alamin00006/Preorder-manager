@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-export default function PreordersPage() {
+const PreordersPage = () => {
   return (
     <Suspense
       fallback={
@@ -15,4 +15,6 @@ export default function PreordersPage() {
       <PreorderList />
     </Suspense>
   );
-}
+};
+
+export default PreordersPage;

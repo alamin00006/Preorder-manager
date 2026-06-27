@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function NotFound() {
+const NotFound = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <Card className="max-w-md w-full p-8 text-center">
@@ -26,4 +26,6 @@ export default function NotFound() {
       </Card>
     </div>
   );
-}
+};
+
+export default NotFound;

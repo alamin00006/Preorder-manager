@@ -4,15 +4,15 @@ export type ApiError = {
   status: number;
 };
 
-export function createApiError(message: string, status = 400): ApiError {
+export const createApiError = (message: string, status = 400): ApiError => {
   return {
     name: "ApiError",
     message,
     status,
   };
-}
+};
 
-export function isApiError(error: unknown): error is ApiError {
+export const isApiError = (error: unknown): error is ApiError => {
   return (
     typeof error === "object" &&
     error !== null &&
@@ -20,7 +20,7 @@ export function isApiError(error: unknown): error is ApiError {
     "status" in error &&
     error.name === "ApiError"
   );
-}
+};
 
 export const badRequest = (message = "Bad request") =>
   createApiError(message, 400);

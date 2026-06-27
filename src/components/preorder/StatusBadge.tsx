@@ -4,7 +4,7 @@ interface StatusBadgeProps {
   status: "active" | "inactive" | { name: "active" | "inactive" };
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export const StatusBadge = ({ status }: StatusBadgeProps) => {
   const statusName = typeof status === "string" ? status : status.name;
 
   return (
@@ -23,4 +23,4 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       {statusName === "active" ? "Active" : "Inactive"}
     </span>
   );
-}
+};

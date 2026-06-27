@@ -6,13 +6,13 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-function toIsoString(value: Date | string | null | undefined) {
+const toIsoString = (value: Date | string | null | undefined) => {
   if (!value) return null;
 
   return value instanceof Date ? value.toISOString() : value;
-}
+};
 
-export default async function EditPreorderPage({ params }: Props) {
+const EditPreorderPage = async ({ params }: Props) => {
   const { id } = await params;
   let preorder;
   try {
@@ -37,4 +37,6 @@ export default async function EditPreorderPage({ params }: Props) {
   };
 
   return <PreorderForm mode="edit" initialData={serialized} />;
-}
+};
+
+export default EditPreorderPage;

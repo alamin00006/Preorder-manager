@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import axios from "axios";
+import toast from "react-hot-toast";
 import {
   Pencil,
   Trash2,
-  ChevronUp,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   PackageX,
@@ -33,7 +33,7 @@ import { StatusToggle } from "./StatusToggle";
 
 type FilterStatus = "all" | "active" | "inactive";
 
-export function PreorderList() {
+export const PreorderList = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,10 +44,6 @@ export function PreorderList() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   const status = (searchParams.get("status") as FilterStatus) || "all";
@@ -55,18 +51,15 @@ export function PreorderList() {
   const sortOrder = (searchParams.get("sortOrder") as SortOrder) || "desc";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
-  function showToast(msg: string, type: "success" | "error" = "success") {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  }
-
-  function updateParams(updates: Record<string, string>) {
+  // Updates URL query parameters so table state survives refresh, back navigation, and sharing.
+  const updateParams = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([k, v]) => params.set(k, v));
     if (!updates.page) params.set("page", "1");
     router.push(`${pathname}?${params.toString()}`);
-  }
+  };
 
+  // Loads the current table page using the active filter, sorting, and pagination state.
   const fetchData = useCallback(async () => {
     setLoading(true);
     setSelected(new Set());
@@ -78,26 +71,29 @@ export function PreorderList() {
         page: String(page),
         perPage: "10",
       });
-      const res = await fetch(`/api/preorders?${params}`);
-      const json = await res.json();
-      setData(json);
+      const response = await axios.get<PreorderListResponse>(
+        `/api/preorders?${params}`,
+      );
+      setData(response.data);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to load preorders"
+        : "Failed to load preorders";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   }, [status, sortField, sortOrder, page]);
 
+  // Refetches data whenever a URL-driven table parameter changes.
   useEffect(() => {
     void Promise.resolve().then(fetchData);
   }, [fetchData]);
 
-  function handleSort(field: SortField) {
-    updateParams({
-      sortField: field,
-      sortOrder: sortOrder === "asc" ? "desc" : "asc",
-    });
-  }
-
-  function toggleSelect(id: string) {
+  // Toggles a single row selection while preserving the rest of the selected set.
+  const toggleSelect = (id: string) => {
     setSelected((prev: Set<string>) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -107,47 +103,50 @@ export function PreorderList() {
       }
       return next;
     });
-  }
+  };
 
-  function toggleSelectAll() {
+  // Selects every visible row or clears the current page selection.
+  const toggleSelectAll = () => {
     if (!data) return;
     if (selected.size === data.data.length) {
       setSelected(new Set());
     } else {
       setSelected(new Set(data.data.map((p: Preorder) => p.id)));
     }
-  }
+  };
 
-  function openDeleteModal(id: string) {
+  // Stores the pending delete target and opens the confirmation dialog.
+  const openDeleteModal = (id: string) => {
     setItemToDelete(id);
     setDeleteModalOpen(true);
-  }
+  };
 
-  async function confirmDelete() {
+  // Deletes the confirmed preorder and refreshes the table after a successful response.
+  const confirmDelete = async () => {
     if (!itemToDelete) return;
     setDeleteModalOpen(false);
     setDeletingId(itemToDelete);
     try {
-      const res = await fetch(`/api/preorders/${itemToDelete}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        showToast("Preorder deleted successfully");
-        fetchData();
-      } else {
-        showToast("Failed to delete preorder", "error");
-      }
+      await axios.delete(`/api/preorders/${itemToDelete}`);
+      toast.success("Preorder deleted successfully");
+      fetchData();
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message || "Failed to delete preorder"
+        : "Network error. Please try again.";
+      toast.error(message);
     } finally {
       setDeletingId(null);
       setItemToDelete(null);
     }
-  }
+  };
 
-  function handleDelete(id: string) {
+  const handleDelete = (id: string) => {
     openDeleteModal(id);
-  }
+  };
 
-  function handleStatusToggle(id: string, newStatus: "active" | "inactive") {
+  const handleStatusToggle = (id: string, newStatus: "active" | "inactive") => {
+    // Applies the successful status toggle result to local table state without a full refetch.
     setData((prev) =>
       prev
         ? {
@@ -158,8 +157,8 @@ export function PreorderList() {
           }
         : prev,
     );
-    showToast(`Status updated to ${newStatus}`);
-  }
+    toast.success(`Status updated to ${newStatus}`);
+  };
 
   const preorders = data?.data || [];
   const allSelected =
@@ -168,17 +167,6 @@ export function PreorderList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white transition-all ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
-        >
-          {toast.msg}
-        </div>
-      )}
-
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
@@ -218,128 +206,108 @@ export function PreorderList() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-4">
-        {/* Filters + Sort Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          {/* Status Filter Tabs */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
-            {(["all", "active", "inactive"] as FilterStatus[]).map((s) => (
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <Card className="relative overflow-visible">
+          <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2.5">
+            <div className="flex items-center gap-1">
+              {(["all", "active", "inactive"] as FilterStatus[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => updateParams({ status: s })}
+                  className={`rounded-lg px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                    status === s
+                      ? "bg-gray-200 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
               <button
-                key={s}
-                onClick={() => updateParams({ status: s })}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors capitalize ${
-                  status === s
-                    ? "bg-gray-200 text-gray-900"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                title="Sort"
               >
-                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                <ArrowUpDown size={17} />
               </button>
-            ))}
-          </div>
 
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50"
-            >
-              <ArrowUpDown size={16} className="text-gray-500" />
-              <span className="text-gray-700">Sort by</span>
-            </button>
-
-            {showSortDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowSortDropdown(false)}
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
-                    Sort by
-                  </div>
-                  {[
-                    { field: "name" as SortField, label: "Name" },
-                    { field: "products" as SortField, label: "Products" },
-                    {
-                      field: "preorderWhen" as SortField,
-                      label: "Preorder When",
-                    },
-                    { field: "createdAt" as SortField, label: "Created At" },
-                    { field: "startsAt" as SortField, label: "Starts At" },
-                    { field: "endsAt" as SortField, label: "Ends At" },
-                  ].map((option) => (
-                    <div
-                      key={option.field}
-                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => {
-                        handleSort(option.field);
-                        setShowSortDropdown(false);
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">
-                          {option.label}
-                        </span>
-                        <div className="flex items-center gap-2">
+              {showSortDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowSortDropdown(false)}
+                  />
+                  <div className="absolute right-0 top-9 z-20 w-40 rounded-xl border border-gray-200 bg-white py-2 shadow-lg">
+                    <div className="px-3 pb-2 text-sm font-medium text-gray-800">
+                      Sort by
+                    </div>
+                    {[
+                      { field: "name" as SortField, label: "Name" },
+                      {
+                        field: "createdAt" as SortField,
+                        label: "Created At",
+                      },
+                      { field: "startsAt" as SortField, label: "Starts At" },
+                      { field: "endsAt" as SortField, label: "Ends At" },
+                    ].map((option) => (
+                      <button
+                        key={option.field}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => {
+                          updateParams({ sortField: option.field });
+                          setShowSortDropdown(false);
+                        }}
+                      >
+                        <span
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                            sortField === option.field
+                              ? "border-gray-700"
+                              : "border-gray-300"
+                          }`}
+                        >
                           {sortField === option.field && (
-                            <>
-                              {sortOrder === "asc" ? (
-                                <ChevronUp
-                                  size={14}
-                                  className="text-gray-600"
-                                />
-                              ) : (
-                                <ChevronDown
-                                  size={14}
-                                  className="text-gray-600"
-                                />
-                              )}
-                            </>
+                            <span className="h-2 w-2 rounded-full bg-gray-800" />
                           )}
-                          <div
-                            className={`w-4 h-4 rounded-full border ${
-                              sortField === option.field
-                                ? "border-gray-800"
-                                : "border-gray-300"
-                            } flex items-center justify-center`}
-                          >
-                            {sortField === option.field && (
-                              <div className="w-2 h-2 rounded-full bg-gray-800" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <div
-                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
-                      onClick={() => {
-                        updateParams({
-                          sortOrder: sortOrder === "asc" ? "desc" : "asc",
-                        });
-                        setShowSortDropdown(false);
-                      }}
-                    >
-                      <span className="text-sm text-gray-700">
-                        {sortOrder === "asc" ? "Ascending" : "Descending"}
-                      </span>
-                      {sortOrder === "asc" ? (
-                        <ChevronUp size={16} className="text-gray-600" />
-                      ) : (
-                        <ChevronDown size={16} className="text-gray-600" />
-                      )}
+                        </span>
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+
+                    <div className="mt-2 border-t border-gray-200 pt-2">
+                      {[
+                        { order: "asc" as SortOrder, label: "Ascending" },
+                        { order: "desc" as SortOrder, label: "Descending" },
+                      ].map((option) => (
+                        <button
+                          key={option.order}
+                          type="button"
+                          className={`mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-semibold text-gray-800 ${
+                            sortOrder === option.order
+                              ? "bg-gray-100"
+                              : "hover:bg-gray-50"
+                          }`}
+                          onClick={() => {
+                            updateParams({ sortOrder: option.order });
+                            setShowSortDropdown(false);
+                          }}
+                        >
+                          <span className="w-3 text-base leading-none">
+                            {option.order === "asc" ? "\u2191" : "\u2193"}
+                          </span>
+                          <span>{option.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Table */}
-        <Card className="overflow-hidden">
           {selected.size > 0 && (
             <div className="bg-blue-50 border-b border-blue-100 px-5 py-2.5 flex items-center gap-2">
               <span className="text-sm text-blue-700 font-medium">
@@ -467,7 +435,11 @@ export function PreorderList() {
                         <div className="flex items-center justify-center">
                           <StatusToggle
                             id={preorder.id}
-                            status={preorder.status?.name || "inactive"}
+                            status={
+                              preorder.status?.name === "active"
+                                ? "active"
+                                : "inactive"
+                            }
                             onToggle={handleStatusToggle}
                           />
                         </div>
@@ -478,7 +450,7 @@ export function PreorderList() {
                             onClick={() =>
                               router.push(`/preorders/${preorder.id}/edit`)
                             }
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                             title="Edit"
                           >
                             <Pencil size={15} />
@@ -486,7 +458,7 @@ export function PreorderList() {
                           <button
                             onClick={() => handleDelete(preorder.id)}
                             disabled={deletingId === preorder.id}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                             title="Delete"
                           >
                             <Trash2 size={15} />
@@ -502,33 +474,31 @@ export function PreorderList() {
 
           {/* Pagination */}
           {data && (
-            <div className="border-t border-gray-100 px-5 py-3.5 flex items-center justify-between bg-gray-50/50">
-              <p className="text-sm text-gray-500">
-                Showing{" "}
-                <span className="font-medium text-gray-700">
-                  {(page - 1) * 10 + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium text-gray-700">
-                  {Math.min(page * 10, data.total)}
-                </span>{" "}
-                from{" "}
-                <span className="font-medium text-gray-700">{data.total}</span>
-              </p>
-              <div className="flex items-center gap-2">
+            <div className="border-t border-gray-200 bg-gray-50 px-5 py-1.5">
+              <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => updateParams({ page: String(page - 1) })}
                   disabled={page <= 1}
-                  className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
+                  className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-200 text-gray-400 transition-colors hover:bg-gray-300 hover:text-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200/70 disabled:text-gray-300"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={16} strokeWidth={2.25} />
                 </button>
+                <p className="px-2 text-sm font-semibold text-gray-800">
+                  Showing{" "}
+                  <span>
+                    {preorders.length > 0 ? (page - 1) * data.perPage + 1 : 0}
+                  </span>{" "}
+                  to <span>{Math.min(page * data.perPage, data.total)}</span>{" "}
+                  from <span>{data.total}</span>
+                </p>
                 <button
                   onClick={() => updateParams({ page: String(page + 1) })}
                   disabled={page >= data.totalPages}
-                  className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
+                  className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-200 text-gray-400 transition-colors hover:bg-gray-300 hover:text-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200/70 disabled:text-gray-300"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} strokeWidth={2.25} />
                 </button>
               </div>
             </div>
@@ -537,4 +507,4 @@ export function PreorderList() {
       </div>
     </div>
   );
-}
+};
